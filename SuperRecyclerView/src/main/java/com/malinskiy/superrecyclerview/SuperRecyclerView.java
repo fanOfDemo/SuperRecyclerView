@@ -15,41 +15,42 @@ import android.view.ViewStub;
 import android.widget.FrameLayout;
 
 import com.malinskiy.superrecyclerview.swipe.SwipeDismissRecyclerViewTouchListener;
+import com.malinskiy.superrecyclerview.util.FloatUtil;
 
 public class SuperRecyclerView extends FrameLayout {
 
     protected int ITEM_LEFT_TO_LOAD_MORE = 10;
 
     protected RecyclerView mRecycler;
-    protected ViewStub     mProgress;
-    protected ViewStub     mMoreProgress;
-    protected ViewStub     mEmpty;
-    protected View         mProgressView;
-    protected View         mMoreProgressView;
-    protected View         mEmptyView;
+    protected ViewStub mProgress;
+    protected ViewStub mMoreProgress;
+    protected ViewStub mEmpty;
+    protected View mProgressView;
+    protected View mMoreProgressView;
+    protected View mEmptyView;
 
     protected boolean mClipToPadding;
-    protected int     mPadding;
-    protected int     mPaddingTop;
-    protected int     mPaddingBottom;
-    protected int     mPaddingLeft;
-    protected int     mPaddingRight;
-    protected int     mScrollbarStyle;
-    protected int     mEmptyId;
-    protected int     mMoreProgressId;
+    protected int mPadding;
+    protected int mPaddingTop;
+    protected int mPaddingBottom;
+    protected int mPaddingLeft;
+    protected int mPaddingRight;
+    protected int mScrollbarStyle;
+    protected int mEmptyId;
+    protected int mMoreProgressId;
 
     protected LAYOUT_MANAGER_TYPE layoutManagerType;
 
     protected RecyclerView.OnScrollListener mInternalOnScrollListener;
-    private   RecyclerView.OnScrollListener mSwipeDismissScrollListener;
+    private RecyclerView.OnScrollListener mSwipeDismissScrollListener;
     protected RecyclerView.OnScrollListener mExternalOnScrollListener;
 
-    protected OnMoreListener     mOnMoreListener;
-    protected boolean            isLoadingMore;
+    protected OnMoreListener mOnMoreListener;
+    protected boolean isLoadingMore;
     protected SwipeRefreshLayout mPtrLayout;
 
     protected int mSuperRecyclerViewMainLayout;
-    private   int mProgressId;
+    private int mProgressId;
 
     private int[] lastScrollPositions;
 
@@ -137,42 +138,40 @@ public class SuperRecyclerView extends FrameLayout {
             throw new IllegalArgumentException("SuperRecyclerView works with a RecyclerView!");
 
 
-        if (mRecycler != null) {
-            mRecycler.setClipToPadding(mClipToPadding);
-            mInternalOnScrollListener = new RecyclerView.OnScrollListener() {
+        mRecycler.setClipToPadding(mClipToPadding);
+        mInternalOnScrollListener = new RecyclerView.OnScrollListener() {
 
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    super.onScrolled(recyclerView, dx, dy);
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
 
-                    processOnMore();
+                processOnMore();
 
-                    if (mExternalOnScrollListener != null)
-                        mExternalOnScrollListener.onScrolled(recyclerView, dx, dy);
-                    if (mSwipeDismissScrollListener != null)
-                        mSwipeDismissScrollListener.onScrolled(recyclerView, dx, dy);
-                }
-
-                @Override
-                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                    super.onScrollStateChanged(recyclerView, newState);
-                    if (mExternalOnScrollListener != null)
-                        mExternalOnScrollListener.onScrollStateChanged(recyclerView, newState);
-                    if (mSwipeDismissScrollListener != null)
-                        mSwipeDismissScrollListener.onScrollStateChanged(recyclerView, newState);
-                }
-            };
-            mRecycler.addOnScrollListener(mInternalOnScrollListener);
-
-            if (mPadding != -1.0f) {
-                mRecycler.setPadding(mPadding, mPadding, mPadding, mPadding);
-            } else {
-                mRecycler.setPadding(mPaddingLeft, mPaddingTop, mPaddingRight, mPaddingBottom);
+                if (mExternalOnScrollListener != null)
+                    mExternalOnScrollListener.onScrolled(recyclerView, dx, dy);
+                if (mSwipeDismissScrollListener != null)
+                    mSwipeDismissScrollListener.onScrolled(recyclerView, dx, dy);
             }
 
-            if (mScrollbarStyle != -1) {
-                mRecycler.setScrollBarStyle(mScrollbarStyle);
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (mExternalOnScrollListener != null)
+                    mExternalOnScrollListener.onScrollStateChanged(recyclerView, newState);
+                if (mSwipeDismissScrollListener != null)
+                    mSwipeDismissScrollListener.onScrollStateChanged(recyclerView, newState);
             }
+        };
+        mRecycler.addOnScrollListener(mInternalOnScrollListener);
+
+        if (!FloatUtil.compareFloats(mPadding, -1.0f)) {
+            mRecycler.setPadding(mPadding, mPadding, mPadding, mPadding);
+        } else {
+            mRecycler.setPadding(mPaddingLeft, mPaddingTop, mPaddingRight, mPaddingBottom);
+        }
+
+        if (mScrollbarStyle != -1) {
+            mRecycler.setScrollBarStyle(mScrollbarStyle);
         }
     }
 
@@ -197,10 +196,10 @@ public class SuperRecyclerView extends FrameLayout {
     private int getLastVisibleItemPosition(RecyclerView.LayoutManager layoutManager) {
         int lastVisibleItemPosition = -1;
         if (layoutManagerType == null) {
-            if (layoutManager instanceof LinearLayoutManager) {
-                layoutManagerType = LAYOUT_MANAGER_TYPE.LINEAR;
-            } else if (layoutManager instanceof GridLayoutManager) {
+            if (layoutManager instanceof GridLayoutManager) {
                 layoutManagerType = LAYOUT_MANAGER_TYPE.GRID;
+            } else if (layoutManager instanceof LinearLayoutManager) {
+                layoutManagerType = LAYOUT_MANAGER_TYPE.LINEAR;
             } else if (layoutManager instanceof StaggeredGridLayoutManager) {
                 layoutManagerType = LAYOUT_MANAGER_TYPE.STAGGERED_GRID;
             } else {
@@ -216,16 +215,21 @@ public class SuperRecyclerView extends FrameLayout {
                 lastVisibleItemPosition = ((GridLayoutManager) layoutManager).findLastVisibleItemPosition();
                 break;
             case STAGGERED_GRID:
-                StaggeredGridLayoutManager staggeredGridLayoutManager = (StaggeredGridLayoutManager) layoutManager;
-                if (lastScrollPositions == null)
-                    lastScrollPositions = new int[staggeredGridLayoutManager.getSpanCount()];
-
-                staggeredGridLayoutManager.findLastVisibleItemPositions(lastScrollPositions);
-                lastVisibleItemPosition = findMax(lastScrollPositions);
+                lastVisibleItemPosition = caseStaggeredGrid(layoutManager);
                 break;
         }
         return lastVisibleItemPosition;
     }
+
+    private int caseStaggeredGrid(RecyclerView.LayoutManager layoutManager) {
+        StaggeredGridLayoutManager staggeredGridLayoutManager = (StaggeredGridLayoutManager) layoutManager;
+        if (lastScrollPositions == null)
+            lastScrollPositions = new int[staggeredGridLayoutManager.getSpanCount()];
+
+        staggeredGridLayoutManager.findLastVisibleItemPositions(lastScrollPositions);
+        return findMax(lastScrollPositions);
+    }
+
 
     private int findMax(int[] lastPositions) {
         int max = Integer.MIN_VALUE;
@@ -238,8 +242,11 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * @param adapter                       The new adapter to set, or null to set no adapter
-     * @param compatibleWithPrevious        Should be set to true if new adapter uses the same {@android.support.v7.widget.RecyclerView.ViewHolder} as previous one
-     * @param removeAndRecycleExistingViews If set to true, RecyclerView will recycle all existing Views. If adapters have stable ids and/or you want to animate the disappearing views, you may prefer to set this to false
+     * @param compatibleWithPrevious        Should be set to true if new adapter uses the same {@android.support.v7.widget.RecyclerView.ViewHolder}
+     *                                      as previous one
+     * @param removeAndRecycleExistingViews If set to true, RecyclerView will recycle all existing Views. If adapters
+     *                                      have stable ids and/or you want to animate the disappearing views, you may
+     *                                      prefer to set this to false
      */
     private void setAdapterInternal(RecyclerView.Adapter adapter, boolean compatibleWithPrevious,
                                     boolean removeAndRecycleExistingViews) {
@@ -298,15 +305,13 @@ public class SuperRecyclerView extends FrameLayout {
 
         if (mEmptyId != 0) {
             mEmpty.setVisibility(null != adapter && adapter.getItemCount() > 0
-                    ? View.GONE
-                    : View.VISIBLE);
+                                 ? View.GONE
+                                 : View.VISIBLE);
         }
     }
 
     /**
      * Set the layout manager to the recycler
-     *
-     * @param manager
      */
     public void setLayoutManager(RecyclerView.LayoutManager manager) {
         mRecycler.setLayoutManager(manager);
@@ -317,8 +322,6 @@ public class SuperRecyclerView extends FrameLayout {
      * Automatically hide the progressbar
      * Set the refresh to false
      * If adapter is empty, then the emptyview is shown
-     *
-     * @param adapter
      */
     public void setAdapter(RecyclerView.Adapter adapter) {
         setAdapterInternal(adapter, false, true);
@@ -326,7 +329,9 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * @param adapter                       The new adapter to , or null to set no adapter.
-     * @param removeAndRecycleExistingViews If set to true, RecyclerView will recycle all existing Views. If adapters have stable ids and/or you want to animate the disappearing views, you may prefer to set this to false.
+     * @param removeAndRecycleExistingViews If set to true, RecyclerView will recycle all existing Views. If adapters
+     *                                      have stable ids and/or you want to animate the disappearing views, you may
+     *                                      prefer to set this to false.
      */
     public void swapAdapter(RecyclerView.Adapter adapter, boolean removeAndRecycleExistingViews) {
         setAdapterInternal(adapter, true, removeAndRecycleExistingViews);
@@ -370,6 +375,11 @@ public class SuperRecyclerView extends FrameLayout {
      */
     public void showRecycler() {
         hideProgress();
+        if (mRecycler.getAdapter().getItemCount() == 0 && mEmptyId != 0) {
+            mEmpty.setVisibility(View.VISIBLE);
+        } else if (mEmptyId != 0) {
+            mEmpty.setVisibility(View.GONE);
+        }
         mRecycler.setVisibility(View.VISIBLE);
     }
 
@@ -381,10 +391,12 @@ public class SuperRecyclerView extends FrameLayout {
         mMoreProgress.setVisibility(View.GONE);
     }
 
+    public void setRefreshing(boolean refreshing) {
+        mPtrLayout.setRefreshing(refreshing);
+    }
+
     /**
      * Set the listener when refresh is triggered and enable the SwipeRefreshLayout
-     *
-     * @param listener
      */
     public void setRefreshListener(SwipeRefreshLayout.OnRefreshListener listener) {
         mPtrLayout.setEnabled(true);
@@ -393,11 +405,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Set the colors for the SwipeRefreshLayout states
-     *
-     * @param colRes1
-     * @param colRes2
-     * @param colRes3
-     * @param colRes4
      */
     public void setRefreshingColorResources(@ColorRes int colRes1, @ColorRes int colRes2, @ColorRes int colRes3, @ColorRes int colRes4) {
         mPtrLayout.setColorSchemeResources(colRes1, colRes2, colRes3, colRes4);
@@ -405,11 +412,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Set the colors for the SwipeRefreshLayout states
-     *
-     * @param col1
-     * @param col2
-     * @param col3
-     * @param col4
      */
     public void setRefreshingColor(int col1, int col2, int col3, int col4) {
         mPtrLayout.setColorSchemeColors(col1, col2, col3, col4);
@@ -431,8 +433,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Set the scroll listener for the recycler
-     *
-     * @param listener
      */
     public void setOnScrollListener(RecyclerView.OnScrollListener listener) {
         mExternalOnScrollListener = listener;
@@ -440,8 +440,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Add the onItemTouchListener for the recycler
-     *
-     * @param listener
      */
     public void addOnItemTouchListener(RecyclerView.OnItemTouchListener listener) {
         mRecycler.addOnItemTouchListener(listener);
@@ -449,8 +447,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Remove the onItemTouchListener for the recycler
-     *
-     * @param listener
      */
     public void removeOnItemTouchListener(RecyclerView.OnItemTouchListener listener) {
         mRecycler.removeOnItemTouchListener(listener);
@@ -466,8 +462,7 @@ public class SuperRecyclerView extends FrameLayout {
     /**
      * Sets the More listener
      *
-     * @param onMoreListener
-     * @param max            Number of items before loading more
+     * @param max Number of items before loading more
      */
     public void setupMoreListener(OnMoreListener onMoreListener, int max) {
         mOnMoreListener = onMoreListener;
@@ -488,8 +483,6 @@ public class SuperRecyclerView extends FrameLayout {
 
     /**
      * Enable/Disable the More event
-     *
-     * @param isLoadingMore
      */
     public void setLoadingMore(boolean isLoadingMore) {
         this.isLoadingMore = isLoadingMore;
